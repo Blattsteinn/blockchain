@@ -45,12 +45,31 @@ class Block:
         self.previous_block_hash = previous_hash
         self.timestamp = datetime.datetime.now()
         self.version = "v0.1"
-        self.merkel_root_hash = hash.hash_function(".".join(_.transaction_id for _ in _transactions)) # Just hash all transactions for now
+        if _transactions is None:
+            self.merkel_root_hash = hash.hash_function("None")
+        else:
+            self.merkel_root_hash = hash.hash_function(".".join(_.transaction_id for _ in _transactions)) # Just hash all transactions for now
         self.nonce = 0
         self.difficulty_target = 3
 
         self.block_hash = None
         self.mined = False
+        self.number = None
+        self.transactions = _transactions
+
+    def __repr__(self):
+        return (
+            f"Block(\n"
+            f"  previous_block_hash={self.previous_block_hash},\n"
+            f"  timestamp={self.timestamp},\n"
+            f"  version={self.version},\n"
+            f"  merkel_root_hash={self.merkel_root_hash},\n"
+            f"  nonce={self.nonce},\n"
+            f"  difficulty_target={self.difficulty_target},\n"
+            f"  block_hash={self.block_hash},\n"
+            f"  mined={self.mined},\n"
+            f")"
+        )
 
     def mine_block(self):
         if self.mined:
@@ -73,9 +92,21 @@ class Block:
 
 class Blockchain:
     def __init__(self):
-        self.chain = []
+        self.blocks = []
+
+    def create_genesis_block(self):
+        genesis = Block(previous_hash=None, _transactions=None)
+        genesis.mine_block()
+        print("Genesis created")
+        self.blocks.append(genesis)
+
+    def add_new_block(self, _block):
+        self.blocks.append(_block)
 
 if __name__ == "__main__":
+
+    blockchain = Blockchain()
+    blockchain.create_genesis_block()
 
     # 1) Create 1000 users
     users = [User() for _ in range(25)]
@@ -84,7 +115,7 @@ if __name__ == "__main__":
 
     # 2) Generate 10,000 transaction
     transactions = []
-    for _ in range(10_000):
+    for _ in range(10_00):
         while True:
             sender = random.choice(users)
             receiver = random.choice(users)
@@ -96,29 +127,34 @@ if __name__ == "__main__":
                     break
 
         transactions.append(Transaction(sender.public_key, receiver.public_key, amount))
-        # sender.add(-amount)
-        # receiver.add(amount)
-    print("Created 10.000 transactions")
+    print("Created 10_00 transactions")
 
-    # 3) Choosing 100 random transactions
-    random_transactions = []
-    for _ in range(100):
-        transaction = random.choice(transactions)
-        random_transactions.append(transaction)
-    print("Picked 100 random transactions")
+    for _ in range(2):
 
-    # 4) Mine the block
-    block = Block(previous_hash="", _transactions = random_transactions)
-    block.mine_block()
-    print("Mined a block")
+        # 3) Choosing 100 random transactions
+        random_transactions = []
+        for _ in range(100):
+            transaction = random.choice(transactions)
+            random_transactions.append(transaction)
+        print("Picked 100 random transactions")
+
+        # 4) Mine the block
+        _previous_hash = blockchain.blocks[-1].block_hash
+        block = Block(previous_hash=_previous_hash, _transactions = random_transactions)
+        block.mine_block()
+        print("Mined a block")
 
 
-    # 5) Confirm the block and add it to the blockchain
-    transactions = [trx for trx in transactions if trx not in random_transactions]
-    for trx in random_transactions:
-        users_dict[trx.sender].add(-trx.amount)
-        users_dict[trx.receiver].add(trx.amount)
-    random_transactions = []
+        # 5) Confirm the block and add it to the blockchain
+        transactions = [trx for trx in transactions if trx not in random_transactions]
+        for trx in random_transactions:
+            users_dict[trx.sender].add(-trx.amount)
+            users_dict[trx.receiver].add(trx.amount)
+        blockchain.add_new_block(block)
+        print("Confirmed a block & added transactions")
 
-    # ADD IT TO THE BLOCKCHAIN
-    print("Confirmed a block & added transactions")
+        #
+
+
+    for block in blockchain.blocks:
+        print(block)
