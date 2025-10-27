@@ -15,7 +15,7 @@ def create_transactions(amount: int, user_list):
     transactions = []
     for _ in range(amount):
         sender, receiver = random.sample(user_list, 2)
-        currency_send = random.randint(1, 10) * 5
+        currency_send = random.randint(1, 10) * 50
         transactions.append(Transaction(sender.public_key, receiver.public_key, currency_send))
 
     print(f"[2] Created {amount} transactions")
@@ -39,10 +39,34 @@ class User:
         self.__private_key = get_private_key()
         self.public_key = hash.hash_function(self.__private_key) #for simplicity
 
-        self.balance = random.randrange(100, 1_000, 5)
+        self.balance = []
+        self.balance.append(random.randrange(100, 1_000, 5))
 
     def add(self, amount):
-        self.balance += amount
+        self.balance.append(amount)
+
+    def spend(self, amount, sender):
+        total: int = 0
+        to_spend = []
+
+        for part in self.balance:
+            total += part
+            to_spend.append(part)
+            if total >= amount:
+                break
+
+        # if not enough:
+        if total < amount:
+            return
+
+        for part in to_spend:
+            self.balance.remove(part)
+
+        change = total - amount
+        if change > 0:
+            self.balance.append(change)
+
+        sender.add(amount)
 
     def __repr__(self):
         return(
@@ -137,16 +161,16 @@ if __name__ == "__main__":
     blockchain = Blockchain()
 
     # 1) Create 1000 users   -----------------------------------------------------------------------------/
-    users, users_dict = create_users(amount = 1000)
+    users, users_dict = create_users(amount = 2)
 
     # 2) Generate 10,000 transaction -------------------------------------------------------------------/
-    transactions = create_transactions(amount= 10000, user_list= users)
+    transactions = create_transactions(amount= 10, user_list= users)
 
     amount_of_blocks = int(len(transactions)/100)
-    for i in range(100):
+    for i in range(1):
         print(f"{i+1}---------------------------------------------------")
 
-        random_transactions = random.sample(transactions,100) # Step 3)
+        random_transactions = random.sample(transactions,10) # Step 3)
 
         previous_hash = blockchain.blocks[-1].block_hash
         block = Block(previous_hash = previous_hash, transactions = random_transactions, number = i + 1)
@@ -157,10 +181,11 @@ if __name__ == "__main__":
         random_transactions_set = set(random_transactions)
         transactions = [trx for trx in transactions if trx not in random_transactions_set]
         for trx in random_transactions:
-            if users_dict[trx.sender].balance >= trx.amount:
-                users_dict[trx.sender].add(-trx.amount)
-                users_dict[trx.receiver].add(trx.amount)
-            else: trx.amount = 0
+
+            sender_user = users_dict[trx.sender]
+            receiver_user = users_dict[trx.receiver]
+            sender_user.spend(trx.amount, receiver_user)
+
         blockchain.add_new_block(block)
         print("[5] Confirmed a block & removed transactions from the list")
 
