@@ -4,7 +4,7 @@ from blockchain import Blockchain, Block
 import random
 
 AMOUNT_OF_USERS = 1000
-AMOUNT_OF_TRANSACTIONS = 1000
+AMOUNT_OF_TRANSACTIONS = 10_000
 used_names = {}
 
 def create_users(amount: int):
@@ -27,7 +27,6 @@ def get_random_name():
     names = ["Alice", "Bob", "Charlie", "Diana", "Edward", "Fiona", "George", "Hannah"]
     name = random.choice(names)
 
-    # Check if it’s already used
     if name not in used_names:
         used_names[name] = 0
         return name
@@ -125,7 +124,7 @@ def main():
 
             sender_balance = sum(sender_user.balance)
             if sender_balance < trx.amount:
-                print("mhh")
+                print("Unsufficient funds")
                 continue
             valid_transactions.append(trx)
             sender_user.spend(trx.amount, receiver_user)
@@ -137,7 +136,7 @@ def main():
                 transaction_file.write(f"{index} {trx}")
 
         blockchain.add_new_block(block)
-        print("[5] Confirmed a block & removed transactions from the list")
+        print("[3] Confirmed a block & removed transactions from the list")
 
 
     with open("all_blocks.txt", 'w') as block_file:

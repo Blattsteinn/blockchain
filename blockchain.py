@@ -10,7 +10,7 @@ class Block:
         self.version = "v0.1"
         self.merkel_root_hash = self.merkle_root(transactions)
         self.nonce = 0
-        self.difficulty_target = 1
+        self.difficulty_target = 3
         #-------- Transactions
         self.transactions = transactions
         #-------- Additional information
