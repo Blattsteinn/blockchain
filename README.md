@@ -2,8 +2,33 @@
 
 This repository showcases simple blockchain implementation using Python that tries to simulate real life scenarios.
 
-## Blockchain & block structure
+## Usage
+1. Navigate to the folder you want to clone the repository and run:
 
+```git clone https://github.com/Blattsteinn/blockchain.git```
+
+2. Open the project folder in your IDE and open ```main.py``` OR navigate to the project folder and run ```python main.py``` via command prompt
+3. In the IDE run the script
+```python
+if __name__ == "__main__":
+    main()
+```
+For faster results, consider changing variable at the top of ```main.py```
+```python
+AMOUNT_OF_USERS = 10
+AMOUNT_OF_TRANSACTIONS = 500
+```
+You can also reduce the difficulty level for faster mining.
+```python
+class Block:
+    def __init__(self, previous_hash, transactions, number = None):
+        self.block_hash = None
+        #------- Header
+        self.difficulty_target = 1 # <---- Here
+```
+
+## Blockchain & block structure
+```blockchain.py```
 ```python
 class Blockchain:
     def __init__(self):
@@ -37,6 +62,7 @@ class Block:
         self.hash_start = "0" * self.difficulty_target
 ```
 ## Explanation
+```main.py```
 
 **1)** Firstly we initialize a blockchain, which creates a genesis block.
 ```python
@@ -97,27 +123,8 @@ When the block is mined we remove the randomly picked transactions from the tran
 
 and we repeat this part till there's no transactions left.
 
-## Usage
-1. Navigate to the folder you want to clone the repository and run:
+## Results
+Results can be seen in ```users.txt```, ```all_blocks.txt```, ```transactions.txt```
 
-```git clone https://github.com/Blattsteinn/blockchain.git```
-
-2. Open the project folder in your IDE and open ```blockchain.py``` OR navigate to the project folder and run ```python blockchain.py``` via command prompt
-3. Run the script
-```python
-if __name__ == "__main__":
-    main()
-```
-For faster results, consider changing variable at the top of ```blockchain.py```
-```python
-AMOUNT_OF_USERS = 10
-AMOUNT_OF_TRANSACTIONS = 500
-```
-You can also reduce the difficulty level for faster mining
-```python
-class Block:
-    def __init__(self, previous_hash, transactions, number = None):
-        self.block_hash = None
-        #------- Header
-        self.difficulty_target = 1 # <---- Here
-```
+Snippet when we finish mining 100 blocks: 
+<img width="931" height="560" alt="image" src="https://github.com/user-attachments/assets/e047f8ff-1cf3-4d3e-93ce-e3130c4ec3e0" />
