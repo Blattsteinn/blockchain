@@ -8,7 +8,7 @@ class Block:
         self.previous_block_hash =  previous_hash or "0" * 64
         self.timestamp = datetime.datetime.now()
         self.version = "v0.1"
-        self.merkel_root_hash = self.merkle_root(transactions)
+        self.merkle_root_hash = self.merkle_tree()
         self.nonce = 0
         self.difficulty_target = 3
         #-------- Transactions
@@ -35,8 +35,24 @@ class Block:
             f")\n"
         )
 
-    def merkle_root(self, transactions):
-        return hash_function(".".join(_.transaction_id for _ in transactions))
+    def merkle_tree(self):
+        id_list = [trx.transaction_id for trx in self.transactions]
+        hash_list = []
+
+        while True:
+            if len(id_list) == 2:
+                hashed_trx = hash_function(id_list[0] + id_list[1])
+                return hashed_trx
+
+            size = len(id_list)
+            for i in range(0, size, 2):
+                hashed_trx = hash_function(id_list[i] + id_list[i + 1])
+                hash_list.append(hashed_trx)
+
+            id_list = hash_list.copy()
+            hash_list.clear()
+            if len(id_list) % 2 == 1:
+                id_list.append(id_list[-1])
 
     def mine_block(self):
         if self.mined:
