@@ -113,12 +113,18 @@ When the block is mined we remove the randomly picked transactions from the tran
 ```python
         random_transactions_set = set(random_transactions)
         transactions = [trx for trx in transactions if trx not in random_transactions_set]
-        for trx in random_transactions:
-            sender_user = users_dict[trx.sender]
-            receiver_user = users_dict[trx.receiver]
-            sender_user.spend(trx.amount, receiver_user)
 
-        blockchain.add_new_block(block)
+        valid_transactions = []
+        for index, trx in enumerate(random_transactions):
+            sender_user= users_dict[trx.sender]
+            receiver_user = users_dict[trx.receiver]
+
+            sender_balance = sum(sender_user.balance)
+            if sender_balance < trx.amount:
+                print("Unsufficient funds")
+                continue
+            valid_transactions.append(trx)
+            sender_user.spend(trx.amount, receiver_user)
 ```
 
 and we repeat this part till there's no transactions left.
