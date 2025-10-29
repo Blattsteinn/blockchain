@@ -27,7 +27,7 @@ class Block:
             f"  previous_block_hash={self.previous_block_hash},\n"
             f"  timestamp={self.timestamp},\n"
             f"  version={self.version},\n"
-            f"  merkel_root_hash={self.merkel_root_hash},\n"
+            f"  merkle_root_hash={self.merkle_root_hash},\n"
             f"  nonce={self.nonce},\n"
             f"  difficulty_target={self.difficulty_target},\n"
             f" amount_of_transactions={self.amount_of_transactions},\n"
@@ -59,7 +59,7 @@ class Block:
             print("Is already mined")
             return
 
-        header = f"{self.version}{self.timestamp}{self.previous_block_hash}{self.merkel_root_hash}{self.difficulty_target}"
+        header = f"{self.version}{self.timestamp}{self.previous_block_hash}{self.merkle_root_hash}{self.difficulty_target}"
         while True:
             current_guess = hash_function(header + str(self.nonce))
             if current_guess.startswith(self.hash_start):
