@@ -1,62 +1,125 @@
 import datetime
+import json
 from hash import hash_function
+from typing import Dict
+
+class Blockchain:
+    def __init__(self):
+        self.blocks = []
+
+    def create_genesis_block(self):
+        genesis = Block(previous_hash=None, transactions=[], number = 0)
+        genesis.mine_block()
+        self.blocks.append(genesis)
+        print("Genesis block created")
+
+    def add_new_block(self, block):
+        self.blocks.append(block)
+        print(f"[!] Added a new block #{block.block_number}")
+
+    def validate_block_chain(self, transactions):
+        # Validate if transaction hashes in the block match
+        count: int = 0
+        for block in self.blocks:
+            if block.validate_transactions(transactions):
+                count += 1
+        if count == len(self.blocks):
+            return True
+        else:
+            return False
 
 class Block:
     def __init__(self, previous_hash, transactions, number = None):
+        self.transactions = transactions
         self.block_hash = None
+        self.block_number = number
         #------- Header
         self.previous_block_hash =  previous_hash or "0" * 64
         self.timestamp = datetime.datetime.now()
         self.version = "v0.1"
         self.merkle_root_hash = self.merkle_tree()
         self.nonce = 0
-        self.difficulty_target = 3
-        #-------- Transactions
-        self.transactions = transactions
+        self.difficulty_target = 1
         #-------- Additional information
-        self.mined = False
-        self.number = number
-        self.hash_start = "0" * self.difficulty_target
         self.amount_of_transactions = len(transactions)
+        self.mined =  False
+       # self.everything_valid = self.verify_transaction()
 
-    # This is for print(Block)
+        self.hash_start = "0" * self.difficulty_target
+
     def __repr__(self):
-        return (
-            f"Block {self.number}(\n"
-            f"  block_hash={self.block_hash},\n"
-            f"  previous_block_hash={self.previous_block_hash},\n"
-            f"  timestamp={self.timestamp},\n"
-            f"  version={self.version},\n"
-            f"  merkle_root_hash={self.merkle_root_hash},\n"
-            f"  nonce={self.nonce},\n"
-            f"  difficulty_target={self.difficulty_target},\n"
-            f" amount_of_transactions={self.amount_of_transactions},\n"
-            f"  mined={self.mined},\n"
-            f")\n"
-        )
+        return json.dumps({
+            "block_number": self.block_number,
+            "block_hash": self.block_hash,
+            "previous_block_hash": self.previous_block_hash,
+            "timestamp": str(self.timestamp),
+            "version": self.version,
+            "merkle_root_hash": self.merkle_root_hash,
+            "nonce": self.nonce,
+            "difficulty_target": self.difficulty_target,
+            "amount_of_transactions": self.amount_of_transactions,
+            "mined": self.mined,
+            "transactions": self.transactions
+        }, indent=2)
+
+    @classmethod
+    def read_from_file(cls, data):
+        block = object.__new__(cls)
+
+        block.transactions = data["transactions"]
+        block.block_number = data["block_number"]
+        block.block_hash = data["block_hash"]
+        # ------- Header
+        block.previous_block_hash = data['previous_block_hash']
+        block.timestamp = data['timestamp']
+        block.version = data["version"]
+        block.merkle_root_hash = data["merkle_root_hash"]
+        block.nonce = data["nonce"]
+        block.difficulty_target = data["difficulty_target"]
+        # -------- Additional information
+        block.amount_of_transactions = data["amount_of_transactions"]
+        block.mined = data["mined"]
+        block.everything_valid = True
+        # --------
+        block.hash_start = "0" * block.difficulty_target
+        return block
 
     def merkle_tree(self):
-        id_list = [trx.transaction_id for trx in self.transactions]
+        if not self.transactions:
+            return None
+
+        current_list = self.transactions
+        print(current_list)
         hash_list = []
 
         while True:
-            if len(id_list) == 2:
-                hashed_trx = hash_function(id_list[0] + id_list[1])
+            if len(current_list) == 2:
+                hashed_trx = hash_function(current_list[0] + current_list[1])
                 return hashed_trx
 
-            size = len(id_list)
+            if len(current_list) % 2 == 1:
+                current_list.append(current_list[-1])
+
+            size = len(current_list)
             for i in range(0, size, 2):
-                hashed_trx = hash_function(id_list[i] + id_list[i + 1])
+                hashed_trx = hash_function(current_list[i] + current_list[i + 1])
                 hash_list.append(hashed_trx)
 
-            id_list = hash_list.copy()
+            current_list = hash_list.copy()
             hash_list.clear()
-            if len(id_list) % 2 == 1:
-                id_list.append(id_list[-1])
+
+    def verify_transaction(self) -> bool:
+        for trx in self.transactions:
+            to_hash = f"{trx.sender}{trx.receiver}{trx.amount}"
+            expected_id = hash_function(to_hash)
+            if trx.transaction_id != expected_id:
+                print(f"Invalid transaction hash detected: {trx.transaction_id}")
+                return False
+        return True
 
     def mine_block(self):
         if self.mined:
-            print("Is already mined")
+            print("[!] Is already mined")
             return
 
         header = f"{self.version}{self.timestamp}{self.previous_block_hash}{self.merkle_root_hash}{self.difficulty_target}"
@@ -67,17 +130,16 @@ class Block:
                 self.mined = True
                 break
             self.nonce +=1
+        print("[!] Mined a block")
 
-class Blockchain:
-    def __init__(self):
-        self.blocks = []
-        self.create_genesis_block()
+    def validate_transactions(self, transactions: Dict):
 
-    def create_genesis_block(self):
-        genesis = Block(previous_hash=None, transactions=[], number = 0)
-        genesis.mine_block()
-        self.blocks.append(genesis)
-        print("Genesis block created")
+        for t in self.transactions:
+            trx_class = transactions[t]
+            expected_hash = hash_function(trx_class.sender + trx_class.receiver + str(trx_class.amount))
+            actual_hash = t
 
-    def add_new_block(self, block):
-        self.blocks.append(block)
+            if expected_hash != actual_hash:
+                print(f"{actual_hash} is tampered")
+                return False
+        return True
