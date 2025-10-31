@@ -1,7 +1,9 @@
 import datetime
 import json
 from hash import hash_function
-from typing import Dict
+from typing import Dict, List
+
+
 
 class Blockchain:
     def __init__(self):
@@ -21,13 +23,16 @@ class Blockchain:
         # Validate if transaction hashes in the block match
         count: int = 0
         for block in self.blocks:
+            if not block.merkle_root_hash() == block.merkle_root_hash:
+                return False
+
             if block.validate_transactions(transactions):
                 count += 1
-        if count == len(self.blocks):
-            return True
-        else:
+
+        if not count == len(self.blocks):
             return False
 
+        return True
 class Block:
     def __init__(self, previous_hash, transactions, number = None):
         self.transactions = transactions
@@ -37,13 +42,12 @@ class Block:
         self.previous_block_hash =  previous_hash or "0" * 64
         self.timestamp = datetime.datetime.now()
         self.version = "v0.1"
-        self.merkle_root_hash = self.merkle_tree()
+        self.merkle_root_hash = None #Should call after all trx have been confirmed: #self.merkle_tree()
         self.nonce = 0
         self.difficulty_target = 1
         #-------- Additional information
-        self.amount_of_transactions = len(transactions)
+        self.amount_of_transactions = None
         self.mined =  False
-       # self.everything_valid = self.verify_transaction()
 
         self.hash_start = "0" * self.difficulty_target
 
@@ -89,7 +93,6 @@ class Block:
             return None
 
         current_list = self.transactions
-        print(current_list)
         hash_list = []
 
         while True:
@@ -108,15 +111,6 @@ class Block:
             current_list = hash_list.copy()
             hash_list.clear()
 
-    def verify_transaction(self) -> bool:
-        for trx in self.transactions:
-            to_hash = f"{trx.sender}{trx.receiver}{trx.amount}"
-            expected_id = hash_function(to_hash)
-            if trx.transaction_id != expected_id:
-                print(f"Invalid transaction hash detected: {trx.transaction_id}")
-                return False
-        return True
-
     def mine_block(self):
         if self.mined:
             print("[!] Is already mined")
@@ -133,7 +127,6 @@ class Block:
         print("[!] Mined a block")
 
     def validate_transactions(self, transactions: Dict):
-
         for t in self.transactions:
             trx_class = transactions[t]
             expected_hash = hash_function(trx_class.sender + trx_class.receiver + str(trx_class.amount))
@@ -143,3 +136,19 @@ class Block:
                 print(f"{actual_hash} is tampered")
                 return False
         return True
+
+    def remove_unvalid_transactions(self, transactions: Dict, users: Dict):
+        for txid in self.transactions:
+            trx_class = transactions[txid]
+            sender, receiver = users[trx_class.sender], users[trx_class.receiver]
+
+            if not sender.spend(trx_class.amount, receiver): #will return true or false
+                self.transactions.remove(txid)
+                print(f"[!!!] Bad transaction {txid}")
+            else:
+                trx_class.block_number = self.block_number
+
+        self.amount_of_transactions = len(self.transactions)
+        self.merkle_root_hash = self.merkle_tree() #Now compute a merkle_tree
+
+
