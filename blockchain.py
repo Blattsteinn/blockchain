@@ -23,7 +23,7 @@ class Blockchain:
         # Validate if transaction hashes in the block match
         count: int = 0
         for block in self.blocks:
-            if not block.merkle_root_hash() == block.merkle_root_hash:
+            if not block.merkle_tree() == block.merkle_root_hash:
                 return False
 
             if block.validate_transactions(transactions):
@@ -96,6 +96,7 @@ class Block:
         hash_list = []
 
         while True:
+
             if len(current_list) == 2:
                 hashed_trx = hash_function(current_list[0] + current_list[1])
                 return hashed_trx
@@ -138,12 +139,13 @@ class Block:
         return True
 
     def remove_unvalid_transactions(self, transactions: Dict, users: Dict):
-        for txid in self.transactions:
+        for txid in self.transactions[:]: #[:] yra kaip .copy() wow
             trx_class = transactions[txid]
             sender, receiver = users[trx_class.sender], users[trx_class.receiver]
 
             if not sender.spend(trx_class.amount, receiver): #will return true or false
                 self.transactions.remove(txid)
+                del transactions[txid]
                 print(f"[!!!] Bad transaction {txid}")
             else:
                 trx_class.block_number = self.block_number

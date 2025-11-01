@@ -5,8 +5,9 @@ from typing import List, Dict
 from hash import hash_function
 
 class Transaction:
-    def __init__(self, sender_key: str, recipient_key: str, amount: int, number: int = None):
+    def __init__(self, sender_key: str, recipient_key: str, amount: int,  sender_private_key: str, number: int = None,):
         self.transaction_id = hash_function(sender_key + recipient_key + str(amount))
+        self.signature = hash_function(sender_private_key + recipient_key + str(amount))
         self.sender = sender_key
         self.receiver = recipient_key
         self.amount = amount
@@ -17,6 +18,7 @@ class Transaction:
         transaction = object.__new__(cls)
 
         transaction.transaction_id = txid
+        transaction.signature = data["signature"]
         transaction.sender = data["sender"]
         transaction.receiver = data["receiver"]
         transaction.amount = data["amount"]
@@ -27,6 +29,7 @@ class Transaction:
     def __repr__(self):
         return json.dumps( {
         f"{self.transaction_id}": {
+            "signature": self.signature,
             "sender": self.sender,
              "receiver": self.receiver,
              "amount": self.amount,
@@ -39,7 +42,7 @@ def create_transactions(amount: int, user_list):
     for _ in range(amount):
         sender, receiver = random.sample(user_list, 2)
         currency_send = random.randint(1, 1000) * 50
-        transactions.append(Transaction(sender.public_key, receiver.public_key, currency_send))
+        transactions.append(Transaction(sender.public_key, receiver.public_key, currency_send, sender._User__private_key))
 
     print(f"/--- Created {amount} transactions ---/")
     transactions_dict = {}

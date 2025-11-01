@@ -11,7 +11,6 @@ import time
 
 AMOUNT_OF_USERS = 100
 AMOUNT_OF_TRANSACTIONS = 1000
-used_names = {}
 
 def write_to_files(all_transactions, blockchain, users):
     # ------------ Transactions
@@ -95,30 +94,27 @@ def reset():
     # Generate 10,000 transaction
     transactions, transactions_dict = create_transactions(amount= AMOUNT_OF_TRANSACTIONS, user_list= users)
 
-
-    temporary = transactions.copy()
+    valid_transactions = []
     amount_of_blocks = int(len(transactions) / 100)
-    for idx in range(amount_of_blocks):
-        random_transactions = random.sample(transactions,100)
-        random_dict = {}
-        for tx in random_transactions:
-            random_dict[tx.transaction_id] = tx
+    for i in range(0, AMOUNT_OF_TRANSACTIONS, 100):
+        temporary_transactions = transactions[i:(i+100)]
+
         previous_hash = blockchain.blocks[-1].block_hash
 
-        id_list = [trx.transaction_id for trx in random_transactions]
-        block = Block(previous_hash = previous_hash, transactions = id_list, number = idx + 1)
+        id_list = [trx.transaction_id for trx in temporary_transactions]
+        block = Block(previous_hash = previous_hash, transactions = id_list, number = blockchain.blocks[-1].block_number + 1)
 
-        block.remove_unvalid_transactions(random_dict, users_dict)
+        block.remove_unvalid_transactions(transactions_dict, users_dict)
+        for trx in block.transactions:
+            if trx in transactions_dict:
+                valid_transactions.append(transactions_dict[trx])
+
         block.mine_block()
         blockchain.add_new_block(block)
-        print(f"Mined a block {idx}")
+        print(f"Mined a block {blockchain.blocks[-1].block_number}")
 
 
-        random_transactions_set = set(random_transactions)
-        temporary = [trx for trx in temporary if trx not in random_transactions_set]
-
-
-    write_to_files(transactions, blockchain, users)
+    write_to_files(valid_transactions, blockchain, users)
 
 
 def new_main():
@@ -133,20 +129,30 @@ def new_main():
     else: print("[!] There are invalid transactions")
 
     while True:
-        x = input("Generate 100 transactions? ")
-        if x == "n":
+        x = input("Command: ")
+        choice = x.split()
+        if x.lower() == "n" or x.lower() == "exit":
             break
 
-        new_transactions, transactions_dict = create_transactions(100, users)
-        new_id_list = [trx.transaction_id for trx in new_transactions]
+        if choice[0] == "mine":
 
-        block = Block(previous_hash=blockchain.blocks[-1].block_hash, transactions=new_id_list,
-                      number = blockchain.blocks[-1].block_number + 1)
+            print("/--- Creating 100 transactions and mining a block ---/")
+            new_transactions, transactions_dict = create_transactions(100, users)
+            new_id_list = [trx.transaction_id for trx in new_transactions]
 
-        block.remove_unvalid_transactions(transactions_dict, users_dict)
-        block.mine_block()
-        blockchain.add_new_block(block)
-        transactions_list.extend(new_transactions)
+            block = Block(previous_hash=blockchain.blocks[-1].block_hash, transactions=new_id_list,
+                          number = blockchain.blocks[-1].block_number + 1)
+
+            block.remove_unvalid_transactions(transactions_dict, users_dict)
+            block.mine_block()
+            blockchain.add_new_block(block)
+            transactions_list.extend(new_transactions)
+
+        elif choice[0] == "block":
+            print(blockchain.blocks[int(choice[1])])
+
+        elif choice[0] == "trx":
+            print(transactions[choice[1]])
 
 
     # End program
@@ -154,5 +160,5 @@ def new_main():
     print("Successfully saved")
 
 if __name__ == "__main__":
-    #main()
+    #reset()
     new_main()

@@ -46,6 +46,7 @@ class User:
             return False
 
         to_spend = []
+        total = 0
         for part in self.balance:
             total += part
             to_spend.append(part)
